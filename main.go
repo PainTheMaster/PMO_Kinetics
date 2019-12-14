@@ -37,7 +37,7 @@ type Constants struct {
 
 //Cons is a set of constants
 var Cons = Constants{
-	KC: 1.0,
+	KC: 38.93, // conversion at 5 hours is 99% when KC == 38.93
 	KS: 0.0,
 	K1: 4.365e-9,
 	K2: 1.7782e-11,
