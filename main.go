@@ -38,7 +38,7 @@ type Constants struct {
 //Cons is a set of constants
 var Cons = Constants{
 	KC: 1.0,
-	KS: 0.1,
+	KS: 0.0,
 	K1: 4.365e-9,
 	K2: 1.7782e-11,
 }
@@ -61,34 +61,54 @@ func main() {
 		h: 0.0,
 	}
 
-	for iPC = 1; iPC <= 3; iPC++ {
-		var dif1, dif2, dif3, dif4 Variables
-		var temp2, temp3, temp4 Variables
+	adj := 0.01 //positive value!
+	idx5Hour := int(5.0 / dt)
 
-		dif1.z = dzdt(Cons, Ini, X[iPC-1])
-		dif1.h = dhdt(Cons, Ini, X[iPC-1])
-		temp2.z = X[iPC-1].z + dt*dif1.z/2.0
-		temp2.h = X[iPC-1].h + dt*dif1.h/2.0
-		equilibrium(Cons, Ini, &temp2)
+	for {
+		for iPC = 1; iPC <= div; iPC++ {
+			var dif1, dif2, dif3, dif4 Variables
+			var temp2, temp3, temp4 Variables
 
-		dif2.z = dzdt(Cons, Ini, temp2)
-		dif2.h = dhdt(Cons, Ini, temp2)
-		temp3.z = X[iPC-1].z + dt*dif2.z/2.0
-		temp3.h = X[iPC-1].h + dt*dif2.h/2.0
-		equilibrium(Cons, Ini, &temp3)
+			dif1.z = dzdt(Cons, Ini, X[iPC-1])
+			dif1.h = dhdt(Cons, Ini, X[iPC-1])
+			temp2.z = X[iPC-1].z + dt*dif1.z/2.0
+			temp2.h = X[iPC-1].h + dt*dif1.h/2.0
+			equilibrium(Cons, Ini, &temp2)
 
-		dif3.z = dzdt(Cons, Ini, temp3)
-		dif3.h = dhdt(Cons, Ini, temp3)
-		temp4.z = X[iPC-1].z + dt*dif3.z
-		temp4.h = X[iPC-1].h + dt*dif3.h
-		equilibrium(Cons, Ini, &temp4)
+			dif2.z = dzdt(Cons, Ini, temp2)
+			dif2.h = dhdt(Cons, Ini, temp2)
+			temp3.z = X[iPC-1].z + dt*dif2.z/2.0
+			temp3.h = X[iPC-1].h + dt*dif2.h/2.0
+			equilibrium(Cons, Ini, &temp3)
 
-		dif4.z = dzdt(Cons, Ini, temp4)
-		dif4.h = dhdt(Cons, Ini, temp4)
+			dif3.z = dzdt(Cons, Ini, temp3)
+			dif3.h = dhdt(Cons, Ini, temp3)
+			temp4.z = X[iPC-1].z + dt*dif3.z
+			temp4.h = X[iPC-1].h + dt*dif3.h
+			equilibrium(Cons, Ini, &temp4)
 
-		X[iPC].z = X[iPC-1].z + (dif1.z+dif2.z*2.0+dif3.z*2.0+dif4.z)*dt/6.0
-		X[iPC].h = X[iPC-1].h + (dif1.h+dif2.h*2.0+dif3.h*2.0+dif4.h)*dt/6.0
-		equilibrium(Cons, Ini, &X[iPC])
+			dif4.z = dzdt(Cons, Ini, temp4)
+			dif4.h = dhdt(Cons, Ini, temp4)
+
+			X[iPC].z = X[iPC-1].z + (dif1.z+dif2.z*2.0+dif3.z*2.0+dif4.z)*dt/6.0
+			X[iPC].h = X[iPC-1].h + (dif1.h+dif2.h*2.0+dif3.h*2.0+dif4.h)*dt/6.0
+			equilibrium(Cons, Ini, &X[iPC])
+		}
+
+		residPMO := Ini.PH0 - X[idx5Hour].z
+		fmt.Println("KC:", Cons.KC, ", 1% residue:", Ini.PH0*0.01, ", 5h residue:", residPMO)
+		if residPMO >= Ini.PH0*0.01*0.99 && residPMO <= Ini.PH0*0.01*1.01 {
+			break
+		} else if residPMO < Ini.PH0*0.01*0.9 {
+			Cons.KC *= (1.0 - adj)
+		} else {
+			Cons.KC *= (1.0 + adj)
+		}
+	}
+
+	fmt.Println("Done!")
+	for i := range X {
+		fmt.Printf("%f,%f\n", float64(i)*dt, Ini.PH0-X[i].z)
 	}
 }
 
@@ -113,6 +133,4 @@ func equilibrium(Cons Constants, Ini Initial, X *Variables) {
 		(2.0 * (K - 1.0))
 
 	X.y = X.z + X.h - X.x
-
-	fmt.Println("ratio y/x:", X.y/X.x)
 }
