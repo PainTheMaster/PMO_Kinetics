@@ -48,7 +48,7 @@ func main() {
 	var tTot, dt float64
 
 	tTot = 20.0
-	div = 10000
+	div = 1000
 	dt = tTot / float64(div)
 
 	X := make([]Variables, div+1)
